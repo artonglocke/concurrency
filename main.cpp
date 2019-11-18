@@ -1,60 +1,42 @@
 #include <iostream>
 #include <thread>
+#include <string>
 
 #define ITERATION_CYCLE 10
 
-// 1. function pointer
-// 2. function object
-// 3. Lambda functions
-void displayThread()
+void DisplayThreadData(int num, std::string message)
 {
-	for (size_t i = 0; i < ITERATION_CYCLE; i++)
+	std::cout << "Thread number: " << num << std::endl;
+	std::cout << message << std::endl;
+}
+
+void threadRef(int& num)
+{
+	for (size_t i = 0; i < 100000; i++)
 	{
-		std::cout << "Worker with id: " << std::this_thread::get_id() << " is executing!" << std::endl;
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		++num;
+		std::cout << "thread with id: " << std::this_thread::get_id() << " number: " << num << std::endl;
 	}
 }
 
-class DisplayThread
-{
-public:
-	void operator()()
-	{
-		for (size_t i = 0; i < ITERATION_CYCLE; i++)
-		{
-			std::cout << "I am a object thread!" << std::endl;
-			std::this_thread::sleep_for(std::chrono::seconds(1));
-		}
-	}
+// std::thread threadObject(function, params);
 
-};
-
-class ThreadRAII
-{
-public:
-	ThreadRAII(std::thread& thread) : _thread(thread)
-	{};
-	~ThreadRAII()
-	{
-		if (_thread.joinable())
-		{
-			_thread.detach();
-		}
-	};
-
-private:
-	std::thread & _thread;
-};
-
-
+// Napraviti funkciju koja prima referencu na broj, te taj isti broj uvecavati 1000x for <1000 num++
+// Ispisati broj u svakoj iteraciji for petlje skupa sa ID-em od threada
+// std::ref(num)
+// Napraviti 2 threada koja primaju istu referencu!
 int main()
 {
-	std::thread threadObject(displayThread);
+	std::thread threadWithParams(DisplayThreadData, 10, "Hello thread!");
 
-	ThreadRAII* wrapper = new ThreadRAII(threadObject);
+	threadWithParams.join();
+	int i = 0;
+	std::thread thr(threadRef, std::ref(i));
+	std::thread thr2(threadRef, std::ref(i));
 
-	delete wrapper;
+	thr.join();
+	thr2.join();
 
-	std::cout << "Thread wrapper is destroyed!" << std::endl;
+	std::cout << "Final result: " << i << std::endl;
 	std::cin.get();
 }
