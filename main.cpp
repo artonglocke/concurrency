@@ -29,16 +29,32 @@ public:
 
 };
 
+class ThreadRAII
+{
+public:
+	ThreadRAII(std::thread& thread) : _thread(thread)
+	{};
+	~ThreadRAII()
+	{
+		if (_thread.joinable())
+		{
+			_thread.detach();
+		}
+	};
+
+private:
+	std::thread & _thread;
+};
+
+
 int main()
 {
-	std::thread first(displayThread);
-	std::thread second(displayThread);
+	std::thread threadObject(displayThread);
 
-	first.join();
-	if (second.joinable())
-	{
-		second.detach();
-	}
+	ThreadRAII* wrapper = new ThreadRAII(threadObject);
 
+	delete wrapper;
+
+	std::cout << "Thread wrapper is destroyed!" << std::endl;
 	std::cin.get();
 }
