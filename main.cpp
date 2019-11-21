@@ -1,42 +1,65 @@
 #include <iostream>
 #include <thread>
 #include <string>
+#include <vector>
+#include <mutex>
 
-#define ITERATION_CYCLE 10
+#define THREAD_COUNT 5
+#define COUNT 100
 
-void DisplayThreadData(int num, std::string message)
+class Wallet
 {
-	std::cout << "Thread number: " << num << std::endl;
-	std::cout << message << std::endl;
-}
+public:
+	Wallet() : _balance(0) {};
+	~Wallet() {};
 
-void threadRef(int& num)
-{
-	for (size_t i = 0; i < 100000; i++)
+	void addToBalance(int ammount)
 	{
-		++num;
-		std::cout << "thread with id: " << std::this_thread::get_id() << " number: " << num << std::endl;
+		_mutex.lock();
+		for (int i = 0; i < ammount; ++i)
+		{
+			_balance++;
+			std::cout << "Thread: " << std::this_thread::get_id() << " Current balance: " << _balance << std::endl;
+		}
+		_mutex.unlock();
 	}
+
+	int getBalance()
+	{
+		return _balance;
+	}
+
+private:
+	int _balance;
+	std::mutex _mutex;
+};
+
+int multithreadedWallet()
+{
+	Wallet wallet;
+	std::vector<std::thread> threads;
+	for (int i = 0; i < THREAD_COUNT; i++)
+	{
+		threads.push_back(std::thread(&Wallet::addToBalance, &wallet, COUNT));
+	}
+
+	for (int i = 0; i < threads.size(); i++)
+	{
+		threads[i].join();
+	}
+	return wallet.getBalance();
 }
 
-// std::thread threadObject(function, params);
-
-// Napraviti funkciju koja prima referencu na broj, te taj isti broj uvecavati 1000x for <1000 num++
-// Ispisati broj u svakoj iteraciji for petlje skupa sa ID-em od threada
-// std::ref(num)
-// Napraviti 2 threada koja primaju istu referencu!
 int main()
 {
-	std::thread threadWithParams(DisplayThreadData, 10, "Hello thread!");
-
-	threadWithParams.join();
-	int i = 0;
-	std::thread thr(threadRef, std::ref(i));
-	std::thread thr2(threadRef, std::ref(i));
-
-	thr.join();
-	thr2.join();
-
-	std::cout << "Final result: " << i << std::endl;
+	int value = 0;
+	for (int i = 0; i < COUNT; i++)
+	{
+		if ((value = multithreadedWallet()) != COUNT * THREAD_COUNT)
+		{
+			std::cout << "error at: " << i << " Current balance: " << value << std::endl;
+		}
+	}
+	std::cout << "Final value = " << value;
 	std::cin.get();
 }
